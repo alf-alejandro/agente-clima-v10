@@ -7,13 +7,18 @@ Resolution WON: YES resolves to 0.99+ (event happened)
 Resolution LOST: NO resolves to 0.99+ (event didn't happen — we lose the YES investment)
 """
 
+import logging
 import threading
 from collections import defaultdict
+from datetime import datetime, timezone
 from app.scanner import now_utc, fetch_market_live, get_prices
 from app.config import (
     MAX_POSITIONS, TAKE_PROFIT_YES,
     REGION_MAP, MAX_REGION_EXPOSURE,
 )
+import app.db as db
+
+log = logging.getLogger(__name__)
 
 
 class AutoPortfolio:
@@ -28,6 +33,7 @@ class AutoPortfolio:
         self.capital_history    = [
             {"time": now_utc().isoformat(), "capital": initial_capital}
         ]
+        self._cap_record_count = 0
 
     def can_open_position(self):
         return (len(self.positions) < MAX_POSITIONS and
@@ -48,8 +54,12 @@ class AutoPortfolio:
             "status":      "OPEN",
             "pnl":         0.0,
         }
-        self.positions[opp["condition_id"]] = pos
+        cid = opp["condition_id"]
+        self.positions[cid] = pos
         self.capital_disponible -= amount
+        db.upsert_open_position(cid, pos)
+        db.save_state(self.capital_inicial, self.capital_total,
+                      self.capital_disponible, self.session_start)
         return True
 
     def get_position_slugs(self):
@@ -118,8 +128,13 @@ class AutoPortfolio:
         self.capital_disponible += recovered
         self.capital_total      += pnl
 
-        self.closed_positions.append(pos.copy())
+        closed_pos = pos.copy()
+        self.closed_positions.append(closed_pos)
         del self.positions[cid]
+        db.delete_open_position(cid)
+        db.insert_closed_position(closed_pos)
+        db.save_state(self.capital_inicial, self.capital_total,
+                      self.capital_disponible, self.session_start)
 
     # ── Region exposure (kept from V1) ────────────────────────────────────────
 
@@ -184,13 +199,47 @@ class AutoPortfolio:
             "by_city":          city_stats[:6],
         }
 
+    # ── State persistence ─────────────────────────────────────────────────────
+
+    def save_state(self):
+        db.save_state(self.capital_inicial, self.capital_total,
+                      self.capital_disponible, self.session_start)
+
+    def load_state(self):
+        """Restaura estado desde DB al arrancar. Devuelve True si OK."""
+        s = db.load_state()
+        if not s:
+            return False
+        try:
+            self.capital_inicial    = s["capital_inicial"]
+            self.capital_total      = s["capital_total"]
+            self.capital_disponible = s["capital_disponible"]
+            self.positions          = db.load_open_positions()
+            self.closed_positions   = db.load_closed_positions()
+            hist = db.load_capital_history()
+            if hist:
+                self.capital_history = hist
+            self.session_start = datetime.fromisoformat(s["session_start"])
+            log.info(
+                "Estado restaurado desde DB: capital=%.2f  abiertas=%d  cerradas=%d",
+                self.capital_total, len(self.positions), len(self.closed_positions),
+            )
+            return True
+        except Exception as e:
+            log.warning("load_state error: %s", e)
+            return False
+
     # ── Capital snapshot ──────────────────────────────────────────────────────
 
     def record_capital(self):
-        self.capital_history.append({
-            "time":    now_utc().isoformat(),
-            "capital": round(self.capital_total, 2),
-        })
+        ts = now_utc().isoformat()
+        point = {"time": ts, "capital": round(self.capital_total, 2)}
+        self.capital_history.append(point)
+        if len(self.capital_history) > 500:
+            self.capital_history = self.capital_history[-500:]
+        self._cap_record_count += 1
+        if self._cap_record_count % 120 == 0:  # cada ~1h (120 ciclos × 30s)
+            db.append_capital_point(ts, round(self.capital_total, 2))
 
     def snapshot(self):
         pnl = self.capital_total - self.capital_inicial
