@@ -136,7 +136,7 @@ class BotRunner:
                     rt_yes, rt_no = None, None
                 if rt_yes is None:
                     clob_fails += 1
-                    if clob_fails >= 2:
+                    if clob_fails >= 5:
                         clob_ok = False
 
             if rt_yes is None:

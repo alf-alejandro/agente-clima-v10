@@ -129,19 +129,20 @@ class MarketScorer:
         return 0, "-"
 
     def _trajectory_score(self, hist: list) -> int:
-        """Score basado en las últimas 4 observaciones de YES price.
+        """Score basado en las últimas observaciones de YES price.
 
         YES subiendo gradual (0.5–2¢ por paso avg): 30 pts  ← momentum positivo
         YES estable (variación < 1¢):                20 pts  ← anclado bajo, listo para spike
         YES subiendo rápido (>2¢ por paso avg):      10 pts  ← ya se movió, tarde
         YES cayendo / errático:                        0 pts
 
-        Requiere al menos 4 observaciones.
+        Requiere al menos 2 observaciones.
         """
-        if len(hist) < 4:
+        if len(hist) < 2:
             return 0
 
-        prices = [p for _, p, _ in hist[-4:]]
+        n = min(4, len(hist))
+        prices = [p for _, p, _ in hist[-n:]]
         variation  = max(prices) - min(prices)
         avg_change = (prices[-1] - prices[0]) / (len(prices) - 1)
 
@@ -163,12 +164,13 @@ class MarketScorer:
         return 0
 
     def _time_score(self, city: str) -> int:
-        """Score por hora local — igual que V3.
+        """Score por hora local.
 
         ≥ 16h → 20 pts (clima casi definido, edge real)
         14–16h → 15 pts
         12–14h → 10 pts
-        < 12h  →  0 pts
+        11–12h →  5 pts (primera hora elegible — MIN_LOCAL_HOUR=11)
+        < 11h  →  0 pts
         """
         offset = CITY_UTC_OFFSET.get(city)
         if offset is None:
@@ -181,4 +183,6 @@ class MarketScorer:
             return 15
         if h >= 12:
             return 10
+        if h >= 11:
+            return 5
         return 0
