@@ -156,14 +156,14 @@ class BotRunner:
 
             # Entry gate: precio en rango Y score suficiente
             if not (MIN_YES_PRICE <= rt_yes <= MAX_YES_PRICE):
-                log.info(
+                log.debug(
                     "Skip %s — YES=%.1f¢ fuera de rango",
                     opp["question"][:35], rt_yes * 100,
                 )
                 continue
 
             if score_total < MIN_ENTRY_SCORE:
-                log.info(
+                log.debug(
                     "Skip %s — YES=%.1f¢ score=%d (mín %d) zona=%s",
                     opp["question"][:35], rt_yes * 100, score_total, MIN_ENTRY_SCORE, sc["zone"],
                 )
@@ -224,7 +224,7 @@ class BotRunner:
                     break
                 city = opp.get("city", "")
                 if not portfolio.region_has_capacity(city):
-                    log.info("Región llena, skip %s (%s)", city, opp["question"][:30])
+                    log.debug("Región llena, skip %s (%s)", city, opp["question"][:30])
                     continue
                 amount = calc_position_size(portfolio.capital_disponible, opp["yes_price"])
                 if amount >= 0.50:
@@ -320,7 +320,7 @@ class BotRunner:
                     old = pos["current_yes"]
                     pos["current_yes"] = yes_p
                     if abs(yes_p - old) >= 0.001:
-                        log.info(
+                        log.debug(
                             "Precio YES [%s] %s: %.4f → %.4f",
                             source, slug[:30] if slug else cid[:20], old, yes_p,
                         )
