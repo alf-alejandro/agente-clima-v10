@@ -23,9 +23,9 @@ SCORE_VOLUME_LOW  = float(os.environ.get("SCORE_VOLUME_LOW",  200))  # +10 pts
 # Price history
 PRICE_HISTORY_TTL = int(os.environ.get("PRICE_HISTORY_TTL", 3600))
 
-# Position sizing (de V4: 0.5%-1.0% inversamente proporcional al YES price)
-POSITION_SIZE_MIN = float(os.environ.get("POSITION_SIZE_MIN", 0.005))  # 0.5%
-POSITION_SIZE_MAX = float(os.environ.get("POSITION_SIZE_MAX", 0.010))  # 1.0%
+# Position sizing (1.0%-2.0% inversamente proporcional al YES price)
+POSITION_SIZE_MIN = float(os.environ.get("POSITION_SIZE_MIN", 0.010))  # 1.0%
+POSITION_SIZE_MAX = float(os.environ.get("POSITION_SIZE_MAX", 0.020))  # 2.0%
 
 # Shared scan parameters
 MIN_VOLUME        = float(os.environ.get("MIN_VOLUME", 200))
