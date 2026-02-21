@@ -1,13 +1,19 @@
-"""bot.py — V6: Score-Filtered YES (híbrido V3 + V4).
+"""bot.py — V10: V6 + Day-of-Week Regime.
 
 Cycle:
   1. Gamma discovery → candidates (NO 0.88-0.97 = YES 0.03-0.12)
   2. CLOB YES price → record en MarketScorer
-  3. Entry gate: YES en 0.06-0.12 AND score >= MIN_ENTRY_SCORE
-  4. Open positions para entradas confirmadas
-  5. Update prices para posiciones abiertas
-  6. Exits: YES >= 0.15 (TP), YES >= 0.99 (WON), NO >= 0.99 (LOST)
-  7. Purge stale scorer history
+  3. Regime check: si es finde y WEEKEND_ENABLED=False → skip entradas
+  4. Entry gate: YES en rango_activo AND score >= score_activo
+  5. Open positions para entradas confirmadas
+  6. Update prices para posiciones abiertas
+  7. Exits: YES >= 0.15 (TP), YES >= 0.99 (WON), NO >= 0.99 (LOST)
+  8. Purge stale scorer history
+
+Regímenes:
+  SEMANA (lun–vie): YES 6–12¢, score ≥ 60  → alta volatilidad, gana
+  FINDE  (sáb–dom): bloqueado por defecto   → baja volatilidad, pierde
+                    (WEEKEND_ENABLED=true activa umbrales WEEKEND_*)
 """
 
 import threading
@@ -20,12 +26,33 @@ from app.scanner import (
 from app.config import (
     MONITOR_INTERVAL, POSITION_SIZE_MIN, POSITION_SIZE_MAX,
     MIN_YES_PRICE, MAX_YES_PRICE, TAKE_PROFIT_YES,
-    MIN_ENTRY_SCORE, PRICE_UPDATE_INTERVAL, MAX_POSITIONS,
+    PRICE_UPDATE_INTERVAL, MAX_POSITIONS,
+    WEEKEND_ENABLED,
+    WEEKDAY_YES_MIN, WEEKDAY_YES_MAX, WEEKDAY_MIN_SCORE,
+    WEEKEND_YES_MIN, WEEKEND_YES_MAX, WEEKEND_MIN_SCORE,
 )
 
 log = logging.getLogger(__name__)
 
 MAX_CLOB_VERIFY = 15
+
+
+def is_weekend() -> bool:
+    """True si el día UTC actual es sábado (5) o domingo (6)."""
+    return datetime.now(timezone.utc).weekday() >= 5
+
+
+def get_entry_thresholds():
+    """Retorna (yes_min, yes_max, min_score, regime_label) según el día.
+
+    Si es finde y WEEKEND_ENABLED=False → returns (None, None, None, 'FINDE_BLOQUEADO').
+    """
+    if is_weekend():
+        if WEEKEND_ENABLED:
+            return WEEKEND_YES_MIN, WEEKEND_YES_MAX, WEEKEND_MIN_SCORE, "FINDE"
+        else:
+            return None, None, None, "FINDE_BLOQUEADO"
+    return WEEKDAY_YES_MIN, WEEKDAY_YES_MAX, WEEKDAY_MIN_SCORE, "SEMANA"
 
 
 def calc_position_size(capital_disponible, yes_price):
@@ -55,6 +82,7 @@ class BotRunner:
         self.last_opportunities = []
         self.status        = "stopped"
         self.last_price_update = None
+        self.active_regime = "—"
 
     @property
     def is_running(self):
@@ -79,14 +107,14 @@ class BotRunner:
     # ── Main scan loop ─────────────────────────────────────────────────────────
 
     def _run(self):
-        log.info("Bot V6 iniciado — Score-Filtered YES (híbrido V3+V4)")
+        log.info("Bot V10 iniciado — Score-Filtered YES + Day-of-Week Regime")
         while not self._stop_event.is_set():
             try:
                 self._cycle()
             except Exception:
-                log.exception("Error en ciclo V6")
+                log.exception("Error en ciclo V10")
             self._stop_event.wait(MONITOR_INTERVAL)
-        log.info("Bot V6 detenido")
+        log.info("Bot V10 detenido")
 
     def _cycle(self):
         self.scan_count += 1
@@ -98,6 +126,16 @@ class BotRunner:
             log.warning("Price thread caído — reiniciando")
             self._price_thread = threading.Thread(target=self._run_prices, daemon=True)
             self._price_thread.start()
+
+        # Determinar régimen activo
+        yes_min, yes_max, min_score, regime = get_entry_thresholds()
+        self.active_regime = regime
+        entries_blocked = (yes_min is None)
+
+        if entries_blocked:
+            log.info("Régimen FINDE_BLOQUEADO — sin nuevas entradas (WEEKEND_ENABLED=false)")
+        else:
+            log.debug("Régimen %s — YES %.0f–%.0f¢ score≥%d", regime, yes_min*100, yes_max*100, min_score)
 
         # 1. IDs a saltar
         with portfolio.lock:
@@ -154,24 +192,28 @@ class BotRunner:
 
             display_opps.append({**opp, "score": score_total, "zone": sc["zone"]})
 
-            # Entry gate: precio en rango Y score suficiente
-            if not (MIN_YES_PRICE <= rt_yes <= MAX_YES_PRICE):
+            # Si entradas bloqueadas (finde sin WEEKEND_ENABLED), skip entry gate
+            if entries_blocked:
+                continue
+
+            # Entry gate: precio en rango activo Y score suficiente
+            if not (yes_min <= rt_yes <= yes_max):
                 log.debug(
-                    "Skip %s — YES=%.1f¢ fuera de rango",
-                    opp["question"][:35], rt_yes * 100,
+                    "Skip %s — YES=%.1f¢ fuera de rango [%s]",
+                    opp["question"][:35], rt_yes * 100, regime,
                 )
                 continue
 
-            if score_total < MIN_ENTRY_SCORE:
+            if score_total < min_score:
                 log.debug(
-                    "Skip %s — YES=%.1f¢ score=%d (mín %d) zona=%s",
-                    opp["question"][:35], rt_yes * 100, score_total, MIN_ENTRY_SCORE, sc["zone"],
+                    "Skip %s — YES=%.1f¢ score=%d (mín %d) zona=%s [%s]",
+                    opp["question"][:35], rt_yes * 100, score_total, min_score, sc["zone"], regime,
                 )
                 continue
 
             log.info(
-                "Entrada %s — YES=%.1f¢ score=%d zona=%s",
-                opp["question"][:35], rt_yes * 100, score_total, sc["zone"],
+                "Entrada %s [%s] — YES=%.1f¢ score=%d zona=%s",
+                opp["question"][:35], regime, rt_yes * 100, score_total, sc["zone"],
             )
             verified_opps.append(opp)
 
@@ -231,9 +273,9 @@ class BotRunner:
                     portfolio.open_position(opp, amount)
                     sc = scorer.score(opp["condition_id"], city)
                     log.info(
-                        "Abierta YES: %s @ %.1f¢  $%.2f  score=%d zona=%s",
+                        "Abierta YES: %s @ %.1f¢  $%.2f  score=%d zona=%s [%s]",
                         opp["question"][:40], opp["yes_price"] * 100,
-                        amount, sc["total"], sc["zone"],
+                        amount, sc["total"], sc["zone"], regime,
                     )
 
             if price_map:
@@ -264,7 +306,7 @@ class BotRunner:
     # ── Price update loop ──────────────────────────────────────────────────────
 
     def _run_prices(self):
-        log.info("Price updater V6 iniciado")
+        log.info("Price updater V10 iniciado")
         while not self._stop_event.is_set():
             self._stop_event.wait(PRICE_UPDATE_INTERVAL)
             if self._stop_event.is_set():
@@ -273,7 +315,7 @@ class BotRunner:
                 self._refresh_prices()
             except Exception:
                 log.exception("Error actualizando precios")
-        log.info("Price updater V6 detenido")
+        log.info("Price updater V10 detenido")
 
     def _refresh_prices(self):
         with self.portfolio.lock:

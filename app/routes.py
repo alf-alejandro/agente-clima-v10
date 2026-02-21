@@ -1,5 +1,8 @@
 from flask import Blueprint, render_template, jsonify
 
+from app.bot import is_weekend, get_entry_thresholds
+from app.config import WEEKEND_ENABLED
+
 bp = Blueprint("main", __name__)
 
 bot = None
@@ -31,6 +34,15 @@ def api_status():
     snap["price_thread_alive"] = (
         bot._price_thread is not None and bot._price_thread.is_alive()
     ) if bot else False
+
+    # Day-of-week regime info
+    yes_min, yes_max, min_score, regime = get_entry_thresholds()
+    snap["regime"]           = bot.active_regime if bot else regime
+    snap["regime_blocked"]   = (yes_min is None)
+    snap["weekend_enabled"]  = WEEKEND_ENABLED
+    snap["active_yes_min"]   = yes_min if yes_min is not None else 0.06
+    snap["active_yes_max"]   = yes_max if yes_max is not None else 0.12
+    snap["active_min_score"] = min_score if min_score is not None else 60
 
     if scorer:
         all_scores = scorer.get_all_scores()

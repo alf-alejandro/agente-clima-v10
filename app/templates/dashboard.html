@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agente Clima V6 — Score-Filtered YES</title>
+    <title>Agente Clima V10 — Day-of-Week YES</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -21,10 +21,13 @@
     <header class="border-b border-gray-700 px-6 py-4">
         <div class="max-w-7xl mx-auto flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold text-white">Agente Clima <span class="text-amber-400 text-lg font-normal">V6</span></h1>
-                <p class="text-sm text-gray-400">Score-Filtered YES — Híbrido V3+V4 · Polymarket Weather</p>
+                <h1 class="text-2xl font-bold text-white">Agente Clima <span class="text-amber-400 text-lg font-normal">V10</span></h1>
+                <p class="text-sm text-gray-400">Day-of-Week YES — Score-Filtered · Polymarket Weather</p>
             </div>
             <div class="flex items-center gap-3 flex-wrap">
+                <span id="regime-badge" class="px-3 py-1 rounded-full text-sm font-semibold bg-gray-700 text-gray-400">
+                    —
+                </span>
                 <span id="bot-status-badge" class="flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-red-900/50 text-red-300">
                     <span id="status-dot" class="w-2 h-2 rounded-full bg-red-400"></span>
                     <span id="status-text">Detenido</span>
@@ -79,15 +82,15 @@
 
         <!-- Strategy banner -->
         <div class="card rounded-xl p-4 border-amber-800/30">
-            <h2 class="text-sm font-semibold text-gray-300 mb-2">Estrategia V6 — Score-Filtered YES (Híbrido V3+V4)</h2>
+            <h2 class="text-sm font-semibold text-gray-300 mb-2">Estrategia V10 — Score-Filtered YES + Day-of-Week Regime</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                    <p class="text-xs text-gray-500 uppercase tracking-wide">Entrada YES</p>
-                    <p class="text-amber-300 font-mono font-bold mt-0.5">6–12¢</p>
+                    <p class="text-xs text-gray-500 uppercase tracking-wide">Entrada YES (activa)</p>
+                    <p id="s-range" class="text-amber-300 font-mono font-bold mt-0.5">6–12¢</p>
                 </div>
                 <div>
-                    <p class="text-xs text-gray-500 uppercase tracking-wide">Filtro Score</p>
-                    <p class="text-blue-300 font-mono font-bold mt-0.5">≥ 60 / 100 pts</p>
+                    <p class="text-xs text-gray-500 uppercase tracking-wide">Score Mínimo</p>
+                    <p id="s-score" class="text-blue-300 font-mono font-bold mt-0.5">≥ 60 pts</p>
                 </div>
                 <div>
                     <p class="text-xs text-gray-500 uppercase tracking-wide">Take Profit</p>
@@ -98,11 +101,16 @@
                     <p class="text-purple-300 font-mono font-bold mt-0.5">1–2% (inverso al precio)</p>
                 </div>
             </div>
+            <!-- Regime info -->
+            <div class="grid grid-cols-2 gap-4 text-xs mt-3 pt-3 border-t border-gray-700 text-gray-400">
+                <div><span class="text-emerald-400 font-semibold">SEMANA (lun–vie)</span> — Alta volatilidad → YES sube → gana · YES 6–12¢, score ≥ 60</div>
+                <div><span class="text-yellow-400 font-semibold">FINDE (sáb–dom)</span> — Baja volatilidad → sin entradas por defecto · (WEEKEND_ENABLED=true para activar)</div>
+            </div>
             <!-- Score breakdown -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs mt-3 pt-3 border-t border-gray-700 text-gray-400">
                 <div><span class="text-amber-400 font-semibold">Precio</span> — Zona A (6-9¢)=30 / B (9-12¢)=20</div>
                 <div><span class="text-amber-400 font-semibold">Trayectoria</span> — YES↑ gradual=30 / estable=20 / rápido=10</div>
-                <div><span class="text-amber-400 font-semibold">Volumen</span> — >500=$20 / >300=15 / >200=10</div>
+                <div><span class="text-amber-400 font-semibold">Volumen</span> — >500=20 / >300=15 / >200=10</div>
                 <div><span class="text-amber-400 font-semibold">Hora local</span> — ≥16h=20 / ≥14h=15 / ≥12h=10</div>
             </div>
         </div>
@@ -200,7 +208,7 @@
     </main>
 
     <footer class="text-center text-gray-600 text-xs py-4">
-        Agente Clima V6 &mdash; Score-Filtered YES / Híbrido V3+V4
+        Agente Clima V10 &mdash; Day-of-Week YES / Score-Filtered
     </footer>
 
     <script src="/static/dashboard.js"></script>

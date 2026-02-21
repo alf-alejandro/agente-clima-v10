@@ -36,6 +36,35 @@ function scoreColor(score) {
     return "text-gray-500";
 }
 
+function updateRegimeBadge(data) {
+    const regime  = data.regime || "—";
+    const blocked = data.regime_blocked;
+    const badge   = $id("regime-badge");
+    const yMin    = ((data.active_yes_min || 0.06) * 100).toFixed(0);
+    const yMax    = ((data.active_yes_max || 0.12) * 100).toFixed(0);
+    const sc      = data.active_min_score || 60;
+
+    if (blocked) {
+        badge.className = "px-3 py-1 rounded-full text-sm font-semibold bg-yellow-900/50 text-yellow-300";
+        badge.title = "Fin de semana: sin nuevas entradas (WEEKEND_ENABLED=false)";
+        badge.textContent = "FINDE BLOQUEADO";
+    } else if (regime === "FINDE") {
+        badge.className = "px-3 py-1 rounded-full text-sm font-semibold bg-yellow-900/50 text-yellow-300";
+        badge.title = `Fin de semana activo: YES ${yMin}–${yMax}¢, score ≥${sc}`;
+        badge.textContent = `FINDE · ${yMin}–${yMax}¢`;
+    } else {
+        badge.className = "px-3 py-1 rounded-full text-sm font-semibold bg-emerald-900/50 text-emerald-300";
+        badge.title = `Día de semana: YES ${yMin}–${yMax}¢, score ≥${sc}`;
+        badge.textContent = `SEMANA · ${yMin}–${yMax}¢`;
+    }
+
+    // Update strategy banner dynamic values
+    const rangeEl = $id("s-range");
+    const scoreEl = $id("s-score");
+    if (rangeEl) rangeEl.textContent = blocked ? "BLOQUEADO" : `${yMin}–${yMax}¢`;
+    if (scoreEl) scoreEl.textContent = `≥ ${sc} pts`;
+}
+
 function updateUI(data) {
     const running = data.bot_status === "running";
     const badge = $id("bot-status-badge");
@@ -45,6 +74,8 @@ function updateUI(data) {
     $id("status-text").textContent = running ? "Corriendo" : "Detenido";
     $id("btn-start").classList.toggle("hidden", running);
     $id("btn-stop").classList.toggle("hidden", !running);
+
+    updateRegimeBadge(data);
 
     $id("m-capital").textContent    = "$" + data.capital_total.toFixed(2);
     $id("m-disponible").textContent = "$" + data.capital_disponible.toFixed(2);
@@ -110,9 +141,13 @@ function updateUI(data) {
         $id("no-opps").classList.remove("hidden");
     } else {
         $id("no-opps").classList.add("hidden");
+        const activeYesMin   = data.active_yes_min   || 0.06;
+        const activeYesMax   = data.active_yes_max   || 0.12;
+        const activeMinScore = data.active_min_score || 60;
+        const entriesBlocked = data.regime_blocked;
         oppsTb.innerHTML = opps.map(o => {
-            const inRange  = o.yes_price >= 0.06 && o.yes_price <= 0.12;
-            const ready    = inRange && o.score >= 60;
+            const inRange  = o.yes_price >= activeYesMin && o.yes_price <= activeYesMax;
+            const ready    = !entriesBlocked && inRange && o.score >= activeMinScore;
             const rowClass = ready
                 ? "border-b border-amber-900/40 bg-amber-900/10"
                 : inRange
