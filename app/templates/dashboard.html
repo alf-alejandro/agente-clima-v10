@@ -1,216 +1,538 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agente Clima V10 — Day-of-Week YES</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { background: #0f172a; }
-        .card { background: #1e293b; border: 1px solid #334155; }
-        .pulse-dot { animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-        td.q   { min-width: 220px; word-break: break-word; white-space: normal; line-height: 1.4; }
-        td.num { white-space: nowrap; }
-        td.res { min-width: 180px; word-break: break-word; white-space: normal; line-height: 1.4; font-size: 0.75rem; color: #94a3b8; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agente Clima V10</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --panel: #111118;
+  --border: #1e1e2e;
+  --green: #00ff88;
+  --red: #ff3355;
+  --yellow: #ffd700;
+  --amber: #f59e0b;
+  --dim: #444466;
+  --text: #cccce0;
+  --accent: #7b5fff;
+  --blue: #60a5fa;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; min-height:100vh; font-size:13px; }
+
+/* HEADER */
+header { border-bottom:1px solid var(--border); padding:16px 28px; }
+.header-inner { max-width:1400px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+.logo-title { font-family:'Bebas Neue',sans-serif; font-size:2rem; letter-spacing:4px; color:#fff; }
+.logo-title span { color:var(--amber); font-size:1.1rem; letter-spacing:2px; font-family:'JetBrains Mono',monospace; font-weight:300; }
+.logo-sub { font-size:0.68rem; color:var(--dim); letter-spacing:2px; text-transform:uppercase; margin-top:2px; }
+.header-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+
+/* BADGES */
+.badge-regime { padding:4px 14px; border-radius:2px; font-size:0.72rem; font-weight:700; letter-spacing:1px; border:1px solid; }
+.badge-regime.semana { background:rgba(0,255,136,0.08); border-color:rgba(0,255,136,0.3); color:var(--green); }
+.badge-regime.finde  { background:rgba(255,215,0,0.08); border-color:rgba(255,215,0,0.3); color:var(--yellow); }
+.badge-regime.blocked{ background:rgba(255,51,85,0.08); border-color:rgba(255,51,85,0.3); color:var(--red); }
+
+.badge-status { display:flex; align-items:center; gap:7px; padding:4px 14px; border-radius:2px; font-size:0.72rem; font-weight:600; border:1px solid; }
+.badge-status.running { background:rgba(245,158,11,0.08); border-color:rgba(245,158,11,0.3); color:var(--amber); }
+.badge-status.stopped { background:rgba(255,51,85,0.08); border-color:rgba(255,51,85,0.3); color:var(--red); }
+.status-dot { width:7px; height:7px; border-radius:50%; }
+.pulse-dot { animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.btn { padding:6px 18px; border-radius:2px; font-family:'JetBrains Mono',monospace; font-size:0.72rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; cursor:pointer; border:1px solid; transition:all .15s; }
+.btn-start { background:rgba(245,158,11,0.1); border-color:rgba(245,158,11,0.4); color:var(--amber); }
+.btn-start:hover { background:rgba(245,158,11,0.2); }
+.btn-stop  { background:rgba(255,51,85,0.1); border-color:rgba(255,51,85,0.4); color:var(--red); }
+.btn-stop:hover  { background:rgba(255,51,85,0.2); }
+.hidden { display:none!important; }
+
+/* MAIN */
+main { max-width:1400px; margin:0 auto; padding:24px 28px; display:flex; flex-direction:column; gap:20px; }
+
+/* KPIs */
+.kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; }
+.kpi { background:var(--panel); border:1px solid var(--border); padding:14px 16px; border-radius:2px; }
+.kpi-label { font-size:0.6rem; color:var(--dim); letter-spacing:2px; text-transform:uppercase; margin-bottom:6px; }
+.kpi-value { font-size:1.4rem; font-weight:700; }
+.c-white { color:#fff; }
+.c-green { color:var(--green); }
+.c-red   { color:var(--red); }
+.c-amber { color:var(--amber); }
+.c-blue  { color:var(--blue); }
+.c-accent{ color:var(--accent); }
+
+/* STRATEGY BANNER */
+.strategy { background:var(--panel); border:1px solid var(--border); padding:18px 20px; border-radius:2px; }
+.strategy-title { font-size:0.68rem; color:var(--dim); letter-spacing:2px; text-transform:uppercase; margin-bottom:14px; }
+.strategy-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:14px; }
+.strategy-item label { font-size:0.58rem; color:var(--dim); letter-spacing:2px; text-transform:uppercase; display:block; margin-bottom:4px; }
+.strategy-item p { font-size:1rem; font-weight:700; }
+.strategy-divider { border-top:1px solid var(--border); padding-top:12px; margin-top:4px; display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:0.68rem; color:var(--dim); }
+.strategy-divider .score-row { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:8px; }
+
+/* CHART */
+.chart-panel { background:var(--panel); border:1px solid var(--border); padding:18px 20px; border-radius:2px; }
+.panel-title { font-size:0.65rem; color:var(--dim); letter-spacing:2px; text-transform:uppercase; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; }
+
+/* TABLES GRID */
+.tables-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media(max-width:900px){ .tables-row{ grid-template-columns:1fr; } }
+
+.table-panel { background:var(--panel); border:1px solid var(--border); padding:18px 20px; border-radius:2px; overflow-x:auto; }
+table { width:100%; border-collapse:collapse; }
+th { font-size:0.58rem; color:var(--dim); letter-spacing:2px; text-transform:uppercase; padding:0 10px 10px 0; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; }
+td { padding:8px 10px 8px 0; border-bottom:1px solid #16161f; vertical-align:top; }
+tr:last-child td { border-bottom:none; }
+td.q  { min-width:200px; word-break:break-word; white-space:normal; line-height:1.5; }
+td.num{ white-space:nowrap; }
+td.res{ min-width:160px; word-break:break-word; white-space:normal; line-height:1.4; font-size:0.7rem; color:var(--dim); }
+
+.empty-msg { font-size:0.72rem; color:var(--dim); margin-top:10px; }
+
+/* PROGRESS BAR */
+.progress-wrap { margin-top:4px; background:#1e1e2e; border-radius:1px; height:2px; }
+.progress-bar { height:2px; border-radius:1px; transition:width .3s; }
+
+/* PRICE BADGE */
+.price-badge { display:flex; align-items:center; gap:5px; padding:2px 10px; border-radius:2px; font-size:0.65rem; border:1px solid; }
+.price-badge.fresh    { background:rgba(245,158,11,0.08); border-color:rgba(245,158,11,0.3); color:var(--amber); }
+.price-badge.stale    { background:rgba(255,215,0,0.08);  border-color:rgba(255,215,0,0.3);  color:var(--yellow); }
+.price-badge.dead     { background:rgba(255,51,85,0.08);  border-color:rgba(255,51,85,0.3);  color:var(--red); }
+.price-badge.nodata   { background:var(--panel);          border-color:var(--border);         color:var(--dim); }
+.price-dot { width:6px; height:6px; border-radius:50%; }
+
+/* BADGES inline */
+.tag { display:inline-block; padding:1px 7px; border-radius:2px; font-size:0.65rem; font-weight:700; letter-spacing:.5px; }
+.tag-win  { background:rgba(0,255,136,0.1); color:var(--green); }
+.tag-tp   { background:rgba(245,158,11,0.1); color:var(--amber); }
+.tag-lose { background:rgba(255,51,85,0.1); color:var(--red); }
+
+/* INSIGHTS */
+.insights-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+@media(max-width:700px){ .insights-grid{ grid-template-columns:1fr; } }
+.bar-row { margin-bottom:8px; }
+.bar-row-labels { display:flex; justify-content:space-between; font-size:0.65rem; color:var(--dim); margin-bottom:3px; }
+.bar-bg { background:#1e1e2e; border-radius:1px; height:5px; }
+.bar-fill { height:5px; border-radius:1px; }
+
+footer { text-align:center; font-size:0.62rem; color:var(--dim); padding:16px; letter-spacing:2px; text-transform:uppercase; border-top:1px solid var(--border); margin-top:8px; }
+</style>
 </head>
-<body class="text-gray-200 min-h-screen">
+<body>
 
-    <header class="border-b border-gray-700 px-6 py-4">
-        <div class="max-w-7xl mx-auto flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold text-white">Agente Clima <span class="text-amber-400 text-lg font-normal">V10</span></h1>
-                <p class="text-sm text-gray-400">Day-of-Week YES — Score-Filtered · Polymarket Weather</p>
-            </div>
-            <div class="flex items-center gap-3 flex-wrap">
-                <span id="regime-badge" class="px-3 py-1 rounded-full text-sm font-semibold bg-gray-700 text-gray-400">
-                    —
-                </span>
-                <span id="bot-status-badge" class="flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-red-900/50 text-red-300">
-                    <span id="status-dot" class="w-2 h-2 rounded-full bg-red-400"></span>
-                    <span id="status-text">Detenido</span>
-                </span>
-                <button id="btn-start" onclick="startBot()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition">
-                    Iniciar Bot
-                </button>
-                <button id="btn-stop" onclick="stopBot()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition hidden">
-                    Detener Bot
-                </button>
-            </div>
-        </div>
-    </header>
+<header>
+  <div class="header-inner">
+    <div>
+      <div class="logo-title">Agente Clima <span>V10</span></div>
+      <div class="logo-sub">Day-of-Week YES — Score-Filtered · Polymarket Weather</div>
+    </div>
+    <div class="header-controls">
+      <span id="regime-badge" class="badge-regime">—</span>
+      <span id="bot-status-badge" class="badge-status stopped">
+        <span id="status-dot" class="status-dot" style="background:var(--red)"></span>
+        <span id="status-text">Detenido</span>
+      </span>
+      <button id="btn-start" class="btn btn-start" onclick="startBot()">Iniciar Bot</button>
+      <button id="btn-stop" class="btn btn-stop hidden" onclick="stopBot()">Detener Bot</button>
+    </div>
+  </div>
+</header>
 
-    <main class="max-w-7xl mx-auto px-6 py-6 space-y-6">
+<main>
 
-        <!-- Metrics -->
-        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
-            <div class="card rounded-xl p-4">
-                <p class="text-xs text-gray-400 uppercase tracking-wide">Capital Total</p>
-                <p id="m-capital" class="text-xl font-bold text-white mt-1">$0.00</p>
-            </div>
-            <div class="card rounded-xl p-4">
-                <p class="text-xs text-gray-400 uppercase tracking-wide">Disponible</p>
-                <p id="m-disponible" class="text-xl font-bold text-white mt-1">$0.00</p>
-            </div>
-            <div class="card rounded-xl p-4">
-                <p class="text-xs text-gray-400 uppercase tracking-wide">P&L</p>
-                <p id="m-pnl" class="text-xl font-bold mt-1">$0.00</p>
-            </div>
-            <div class="card rounded-xl p-4">
-                <p class="text-xs text-gray-400 uppercase tracking-wide">ROI</p>
-                <p id="m-roi" class="text-xl font-bold mt-1">0.00%</p>
-            </div>
-            <div class="card rounded-xl p-4">
-                <p class="text-xs text-gray-400 uppercase tracking-wide">G / P</p>
-                <p id="m-wl" class="text-xl font-bold text-white mt-1">0 / 0</p>
-            </div>
-            <div class="card rounded-xl p-4">
-                <p class="text-xs text-gray-400 uppercase tracking-wide">Mercados</p>
-                <p id="m-tracked" class="text-xl font-bold text-amber-400 mt-1">0</p>
-            </div>
-            <div class="card rounded-xl p-4">
-                <p class="text-xs text-gray-400 uppercase tracking-wide">Score ≥60</p>
-                <p id="m-highscore" class="text-xl font-bold text-emerald-400 mt-1">0</p>
-            </div>
-            <div class="card rounded-xl p-4">
-                <p class="text-xs text-gray-400 uppercase tracking-wide">Escaneos</p>
-                <p id="m-scans" class="text-xl font-bold text-white mt-1">0</p>
-            </div>
-        </div>
+  <!-- KPIs -->
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-label">Capital Total</div><div id="m-capital" class="kpi-value c-white">$0.00</div></div>
+    <div class="kpi"><div class="kpi-label">Disponible</div><div id="m-disponible" class="kpi-value c-white">$0.00</div></div>
+    <div class="kpi"><div class="kpi-label">P&L</div><div id="m-pnl" class="kpi-value c-white">$0.00</div></div>
+    <div class="kpi"><div class="kpi-label">ROI</div><div id="m-roi" class="kpi-value c-white">0.00%</div></div>
+    <div class="kpi"><div class="kpi-label">G / P</div><div id="m-wl" class="kpi-value c-white">0 / 0</div></div>
+    <div class="kpi"><div class="kpi-label">Mercados</div><div id="m-tracked" class="kpi-value c-amber">0</div></div>
+    <div class="kpi"><div class="kpi-label">Score ≥60</div><div id="m-highscore" class="kpi-value c-green">0</div></div>
+    <div class="kpi"><div class="kpi-label">Escaneos</div><div id="m-scans" class="kpi-value c-white">0</div></div>
+  </div>
 
-        <!-- Strategy banner -->
-        <div class="card rounded-xl p-4 border-amber-800/30">
-            <h2 class="text-sm font-semibold text-gray-300 mb-2">Estrategia V10 — Score-Filtered YES + Day-of-Week Regime</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div>
-                    <p class="text-xs text-gray-500 uppercase tracking-wide">Entrada YES (activa)</p>
-                    <p id="s-range" class="text-amber-300 font-mono font-bold mt-0.5">6–12¢</p>
-                </div>
-                <div>
-                    <p class="text-xs text-gray-500 uppercase tracking-wide">Score Mínimo</p>
-                    <p id="s-score" class="text-blue-300 font-mono font-bold mt-0.5">≥ 60 pts</p>
-                </div>
-                <div>
-                    <p class="text-xs text-gray-500 uppercase tracking-wide">Take Profit</p>
-                    <p class="text-emerald-300 font-mono font-bold mt-0.5">YES ≥ 15¢ (+25–150%)</p>
-                </div>
-                <div>
-                    <p class="text-xs text-gray-500 uppercase tracking-wide">Sizing</p>
-                    <p class="text-purple-300 font-mono font-bold mt-0.5">1–2% (inverso al precio)</p>
-                </div>
-            </div>
-            <!-- Regime info -->
-            <div class="grid grid-cols-2 gap-4 text-xs mt-3 pt-3 border-t border-gray-700 text-gray-400">
-                <div><span class="text-emerald-400 font-semibold">SEMANA (lun–vie)</span> — Alta volatilidad → YES sube → gana · YES 6–12¢, score ≥ 60</div>
-                <div><span class="text-yellow-400 font-semibold">FINDE (sáb–dom)</span> — Baja volatilidad → sin entradas por defecto · (WEEKEND_ENABLED=true para activar)</div>
-            </div>
-            <!-- Score breakdown -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs mt-3 pt-3 border-t border-gray-700 text-gray-400">
-                <div><span class="text-amber-400 font-semibold">Precio</span> — Zona A (6-9¢)=30 / B (9-12¢)=20</div>
-                <div><span class="text-amber-400 font-semibold">Trayectoria</span> — YES↑ gradual=30 / estable=20 / rápido=10</div>
-                <div><span class="text-amber-400 font-semibold">Volumen</span> — >500=20 / >300=15 / >200=10</div>
-                <div><span class="text-amber-400 font-semibold">Hora local</span> — ≥16h=20 / ≥14h=15 / ≥12h=10</div>
-            </div>
-        </div>
+  <!-- Strategy -->
+  <div class="strategy">
+    <div class="strategy-title">Estrategia V10 — Score-Filtered YES + Day-of-Week Regime</div>
+    <div class="strategy-grid">
+      <div class="strategy-item"><label>Entrada YES (activa)</label><p id="s-range" style="color:var(--amber)">6–12¢</p></div>
+      <div class="strategy-item"><label>Score Mínimo</label><p id="s-score" style="color:var(--blue)">≥ 60 pts</p></div>
+      <div class="strategy-item"><label>Take Profit</label><p style="color:var(--green)">YES ≥ 15¢ (+25–150%)</p></div>
+      <div class="strategy-item"><label>Sizing</label><p style="color:var(--accent)">1–2% (inverso al precio)</p></div>
+    </div>
+    <div class="strategy-divider">
+      <div><span style="color:var(--green);font-weight:700">SEMANA (lun–vie)</span> — Alta volatilidad → YES sube → gana · YES 6–12¢, score ≥ 60</div>
+      <div><span style="color:var(--yellow);font-weight:700">FINDE (sáb–dom)</span> — Baja volatilidad → sin entradas por defecto · (WEEKEND_ENABLED=true para activar)</div>
+      <div class="score-row" style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:10px;margin-top:4px;">
+        <div><span style="color:var(--amber)">Precio</span> — A (6-9¢)=30 / B (9-12¢)=20</div>
+        <div><span style="color:var(--amber)">Trayectoria</span> — gradual=30 / estable=20 / rápido=10</div>
+        <div><span style="color:var(--amber)">Volumen</span> — >500=20 / >300=15 / >200=10</div>
+        <div><span style="color:var(--amber)">Hora local</span> — ≥16h=20 / ≥14h=15 / ≥12h=10</div>
+      </div>
+    </div>
+  </div>
 
-        <!-- Chart -->
-        <div class="card rounded-xl p-4">
-            <h2 class="text-sm font-semibold text-gray-300 mb-3">Capital en el Tiempo</h2>
-            <canvas id="capitalChart" height="80"></canvas>
-        </div>
+  <!-- Chart -->
+  <div class="chart-panel">
+    <div class="panel-title">Capital en el Tiempo</div>
+    <canvas id="capitalChart" height="70"></canvas>
+  </div>
 
-        <!-- Tables row -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <!-- Open + Opportunities -->
+  <div class="tables-row">
 
-            <!-- Open positions -->
-            <div class="card rounded-xl p-4 overflow-x-auto">
-                <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-sm font-semibold text-gray-300">Posiciones Abiertas (YES)</h2>
-                    <span id="price-badge" class="flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full bg-gray-700 text-gray-400">
-                        <span id="price-badge-dot" class="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
-                        <span id="price-badge-txt">Precios: —</span>
-                    </span>
-                </div>
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="text-left text-gray-500 border-b border-gray-700">
-                            <th class="pb-2 pr-3">Mercado</th>
-                            <th class="pb-2 pr-3 whitespace-nowrap">Entrada</th>
-                            <th class="pb-2 pr-3 whitespace-nowrap">Actual</th>
-                            <th class="pb-2 pr-3 whitespace-nowrap">TP</th>
-                            <th class="pb-2 pr-3 whitespace-nowrap">$</th>
-                            <th class="pb-2 whitespace-nowrap">P&L</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-open"></tbody>
-                </table>
-                <p id="no-open" class="text-gray-500 text-sm mt-2 hidden">Sin posiciones abiertas</p>
-            </div>
+    <div class="table-panel">
+      <div class="panel-title">
+        Posiciones Abiertas (YES)
+        <span id="price-badge" class="price-badge nodata">
+          <span id="price-badge-dot" class="price-dot" style="background:var(--dim)"></span>
+          <span id="price-badge-txt">Precios: —</span>
+        </span>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Mercado</th>
+          <th>Entrada</th>
+          <th>Actual</th>
+          <th>TP</th>
+          <th>$</th>
+          <th>P&L</th>
+        </tr></thead>
+        <tbody id="table-open"></tbody>
+      </table>
+      <p id="no-open" class="empty-msg hidden">Sin posiciones abiertas</p>
+    </div>
 
-            <!-- Opportunities -->
-            <div class="card rounded-xl p-4 overflow-x-auto">
-                <h2 class="text-sm font-semibold text-gray-300 mb-3">Oportunidades YES (último escaneo)</h2>
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="text-left text-gray-500 border-b border-gray-700">
-                            <th class="pb-2 pr-3">Mercado</th>
-                            <th class="pb-2 pr-3 whitespace-nowrap">YES</th>
-                            <th class="pb-2 pr-3 whitespace-nowrap">Score</th>
-                            <th class="pb-2 pr-3 whitespace-nowrap">Zona</th>
-                            <th class="pb-2 whitespace-nowrap">Vol</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-opps"></tbody>
-                </table>
-                <p id="no-opps" class="text-gray-500 text-sm mt-2 hidden">Sin oportunidades</p>
-            </div>
-        </div>
+    <div class="table-panel">
+      <div class="panel-title">Oportunidades YES (último escaneo)</div>
+      <table>
+        <thead><tr>
+          <th>Mercado</th>
+          <th>YES</th>
+          <th>Score</th>
+          <th>Zona</th>
+          <th>Vol</th>
+        </tr></thead>
+        <tbody id="table-opps"></tbody>
+      </table>
+      <p id="no-opps" class="empty-msg hidden">Sin oportunidades</p>
+    </div>
 
-        <!-- Closed trades -->
-        <div class="card rounded-xl p-4 overflow-x-auto">
-            <h2 class="text-sm font-semibold text-gray-300 mb-3">Trades Cerrados</h2>
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="text-left text-gray-500 border-b border-gray-700">
-                        <th class="pb-2 pr-3">Mercado</th>
-                        <th class="pb-2 pr-3 whitespace-nowrap">Entrada YES</th>
-                        <th class="pb-2 pr-3 whitespace-nowrap">Invertido</th>
-                        <th class="pb-2 pr-3 whitespace-nowrap">P&L</th>
-                        <th class="pb-2 pr-3 whitespace-nowrap">Estado</th>
-                        <th class="pb-2 pr-3">Resolución</th>
-                        <th class="pb-2 whitespace-nowrap">Cerrado</th>
-                    </tr>
-                </thead>
-                <tbody id="table-closed"></tbody>
-            </table>
-            <p id="no-closed" class="text-gray-500 text-sm mt-2 hidden">Sin trades cerrados</p>
-        </div>
+  </div>
 
-        <!-- Insights -->
-        <div id="insights-panel" class="card rounded-xl p-4 hidden">
-            <h2 class="text-sm font-semibold text-gray-300 mb-4">Insights
-                <span id="insights-trades" class="ml-2 text-gray-500 font-normal"></span>
-            </h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <p class="text-xs text-gray-500 uppercase tracking-wide mb-2">Win rate por ciudad</p>
-                    <div id="insights-city" class="space-y-1"></div>
-                </div>
-                <div>
-                    <p class="text-xs text-gray-500 uppercase tracking-wide mb-2">Win rate por hora UTC</p>
-                    <div id="insights-hour" class="space-y-1"></div>
-                </div>
-            </div>
-        </div>
+  <!-- Closed trades -->
+  <div class="table-panel">
+    <div class="panel-title">Trades Cerrados</div>
+    <table>
+      <thead><tr>
+        <th>Mercado</th>
+        <th>Entrada YES</th>
+        <th>Invertido</th>
+        <th>P&L</th>
+        <th>Estado</th>
+        <th>Resolución</th>
+        <th>Cerrado</th>
+      </tr></thead>
+      <tbody id="table-closed"></tbody>
+    </table>
+    <p id="no-closed" class="empty-msg hidden">Sin trades cerrados</p>
+  </div>
 
-    </main>
+  <!-- Insights -->
+  <div id="insights-panel" class="chart-panel hidden">
+    <div class="panel-title">
+      Insights
+      <span id="insights-trades" style="color:var(--dim);font-weight:400"></span>
+    </div>
+    <div class="insights-grid">
+      <div>
+        <div style="font-size:.6rem;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">Win Rate por Ciudad</div>
+        <div id="insights-city"></div>
+      </div>
+      <div>
+        <div style="font-size:.6rem;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">Win Rate por Hora UTC</div>
+        <div id="insights-hour"></div>
+      </div>
+    </div>
+  </div>
 
-    <footer class="text-center text-gray-600 text-xs py-4">
-        Agente Clima V10 &mdash; Day-of-Week YES / Score-Filtered
-    </footer>
+</main>
 
-    <script src="/static/dashboard.js"></script>
+<footer>Agente Clima V10 &mdash; Day-of-Week YES / Score-Filtered</footer>
+
+<script>
+// ── CHART ────────────────────────────────────────────────────────────────────
+const ctx = document.getElementById("capitalChart").getContext("2d");
+const capitalChart = new Chart(ctx, {
+  type: "line",
+  data: {
+    labels: [],
+    datasets: [{
+      label: "Capital ($)",
+      data: [],
+      borderColor: "#7b5fff",
+      backgroundColor: "rgba(123,95,255,0.08)",
+      fill: true, tension: 0.3, pointRadius: 2,
+    }],
+  },
+  options: {
+    responsive: true,
+    scales: {
+      x: { ticks: { color: "#444466", maxTicksLimit: 10, font: { family: "'JetBrains Mono',monospace", size: 10 } }, grid: { color: "#1e1e2e" } },
+      y: { ticks: { color: "#444466", callback: v => "$" + v, font: { family: "'JetBrains Mono',monospace", size: 10 } }, grid: { color: "#1e1e2e" } },
+    },
+    plugins: { legend: { display: false } },
+  },
+});
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+const $id = id => document.getElementById(id);
+const pnlColor = v => v >= 0 ? "c-green" : "c-red";
+const pnlSign  = v => v >= 0 ? "+" : "";
+function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function formatTime(iso) { if (!iso) return "-"; return new Date(iso).toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"}); }
+
+function scoreColor(score) {
+  if (score >= 80) return "c-green";
+  if (score >= 60) return "c-amber";
+  return ""; // dim
+}
+
+// ── REGIME BADGE ─────────────────────────────────────────────────────────────
+function updateRegimeBadge(data) {
+  const regime  = data.regime || "—";
+  const blocked = data.regime_blocked;
+  const badge   = $id("regime-badge");
+  const yMin    = ((data.active_yes_min || 0.06) * 100).toFixed(0);
+  const yMax    = ((data.active_yes_max || 0.12) * 100).toFixed(0);
+  const sc      = data.active_min_score || 60;
+
+  if (blocked) {
+    badge.className = "badge-regime blocked";
+    badge.title = "Fin de semana: sin nuevas entradas (WEEKEND_ENABLED=false)";
+    badge.textContent = "FINDE BLOQUEADO";
+  } else if (regime === "FINDE") {
+    badge.className = "badge-regime finde";
+    badge.title = `Fin de semana activo: YES ${yMin}–${yMax}¢, score ≥${sc}`;
+    badge.textContent = `FINDE · ${yMin}–${yMax}¢`;
+  } else {
+    badge.className = "badge-regime semana";
+    badge.title = `Día de semana: YES ${yMin}–${yMax}¢, score ≥${sc}`;
+    badge.textContent = `SEMANA · ${yMin}–${yMax}¢`;
+  }
+
+  const rangeEl = $id("s-range");
+  const scoreEl = $id("s-score");
+  if (rangeEl) rangeEl.textContent = blocked ? "BLOQUEADO" : `${yMin}–${yMax}¢`;
+  if (scoreEl) scoreEl.textContent = `≥ ${sc} pts`;
+}
+
+// ── MAIN UPDATE ───────────────────────────────────────────────────────────────
+function updateUI(data) {
+  const running = data.bot_status === "running";
+  const badge = $id("bot-status-badge");
+  badge.className = "badge-status " + (running ? "running" : "stopped");
+  $id("status-dot").style.background = running ? "var(--amber)" : "var(--red)";
+  $id("status-dot").className = "status-dot" + (running ? " pulse-dot" : "");
+  $id("status-text").textContent = running ? "Corriendo" : "Detenido";
+  $id("btn-start").classList.toggle("hidden", running);
+  $id("btn-stop").classList.toggle("hidden", !running);
+
+  updateRegimeBadge(data);
+
+  $id("m-capital").textContent    = "$" + data.capital_total.toFixed(2);
+  $id("m-disponible").textContent = "$" + data.capital_disponible.toFixed(2);
+
+  const pnlEl = $id("m-pnl");
+  pnlEl.textContent = pnlSign(data.pnl) + "$" + data.pnl.toFixed(2);
+  pnlEl.className   = "kpi-value " + pnlColor(data.pnl);
+
+  const roiEl = $id("m-roi");
+  roiEl.textContent = pnlSign(data.roi) + data.roi.toFixed(2) + "%";
+  roiEl.className   = "kpi-value " + pnlColor(data.roi);
+
+  $id("m-wl").textContent        = data.won + " / " + data.lost;
+  $id("m-tracked").textContent   = data.tracked_markets || 0;
+  $id("m-highscore").textContent = data.high_score_count || 0;
+  $id("m-scans").textContent     = data.scan_count;
+
+  lastPriceUpdateISO = data.last_price_update || null;
+  priceThreadAlive   = data.price_thread_alive ?? true;
+  updatePriceBadge();
+  updateInsights(data.insights);
+
+  const hist = data.capital_history || [];
+  capitalChart.data.labels           = hist.map(h => formatTime(h.time));
+  capitalChart.data.datasets[0].data = hist.map(h => h.capital);
+  capitalChart.update();
+
+  // Open positions
+  const openTb  = $id("table-open");
+  const openPos = data.open_positions || [];
+  if (openPos.length === 0) {
+    openTb.innerHTML = "";
+    $id("no-open").classList.remove("hidden");
+  } else {
+    $id("no-open").classList.add("hidden");
+    openTb.innerHTML = openPos.map(p => {
+      const progress = Math.min(100, Math.max(0,
+        (p.current_yes - p.entry_yes) / (p.take_profit - p.entry_yes) * 100
+      ));
+      const progressColor = progress >= 80 ? "var(--green)" : progress >= 40 ? "var(--amber)" : "var(--dim)";
+      return `<tr>
+        <td class="q">
+          ${esc(p.question)}
+          <div class="progress-wrap" title="${progress.toFixed(0)}% hacia TP">
+            <div class="progress-bar" style="width:${progress}%;background:${progressColor}"></div>
+          </div>
+        </td>
+        <td class="num" style="color:var(--amber)">${(p.entry_yes * 100).toFixed(1)}¢</td>
+        <td class="num" style="font-weight:600">${(p.current_yes * 100).toFixed(1)}¢</td>
+        <td class="num" style="color:var(--green)">${(p.take_profit * 100).toFixed(1)}¢</td>
+        <td class="num">$${p.allocated.toFixed(2)}</td>
+        <td class="num ${pnlColor(p.pnl)}">${pnlSign(p.pnl)}$${p.pnl.toFixed(2)}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  // Opportunities
+  const oppsTb = $id("table-opps");
+  const opps   = data.last_opportunities || [];
+  if (opps.length === 0) {
+    oppsTb.innerHTML = "";
+    $id("no-opps").classList.remove("hidden");
+  } else {
+    $id("no-opps").classList.add("hidden");
+    const activeYesMin   = data.active_yes_min   || 0.06;
+    const activeYesMax   = data.active_yes_max   || 0.12;
+    const activeMinScore = data.active_min_score || 60;
+    const entriesBlocked = data.regime_blocked;
+    oppsTb.innerHTML = opps.map(o => {
+      const inRange  = o.yes_price >= activeYesMin && o.yes_price <= activeYesMax;
+      const ready    = !entriesBlocked && inRange && o.score >= activeMinScore;
+      const rowBg    = ready ? "background:rgba(245,158,11,0.05)" : inRange ? "background:rgba(255,255,255,0.02)" : "";
+      const zoneColor = o.zone === "A" ? "var(--green)" : o.zone === "B" ? "var(--amber)" : "var(--dim)";
+      return `<tr style="${rowBg}">
+        <td class="q">${esc(o.question)}</td>
+        <td class="num" style="${inRange?'color:var(--amber);font-weight:600':''}">
+          ${(o.yes_price * 100).toFixed(1)}¢
+        </td>
+        <td class="num ${scoreColor(o.score)}" style="font-weight:600">${o.score || 0}</td>
+        <td class="num" style="color:${zoneColor}">${o.zone || '-'}</td>
+        <td class="num">$${(o.volume || 0).toLocaleString()}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  // Closed trades
+  const closedTb = $id("table-closed");
+  const closed   = data.closed_positions || [];
+  if (closed.length === 0) {
+    closedTb.innerHTML = "";
+    $id("no-closed").classList.remove("hidden");
+  } else {
+    $id("no-closed").classList.add("hidden");
+    closedTb.innerHTML = closed.map(c => {
+      const tagClass =
+        c.status === "WON"         ? "tag-win"  :
+        c.status === "TAKE_PROFIT" ? "tag-tp"   :
+        c.status === "LOST"        ? "tag-lose" : "";
+      return `<tr>
+        <td class="q">${esc(c.question)}</td>
+        <td class="num" style="color:var(--amber)">${(c.entry_yes * 100).toFixed(1)}¢</td>
+        <td class="num">$${c.allocated.toFixed(2)}</td>
+        <td class="num ${pnlColor(c.pnl)}">${pnlSign(c.pnl)}$${c.pnl.toFixed(2)}</td>
+        <td class="num"><span class="tag ${tagClass}">${c.status}</span></td>
+        <td class="res">${esc(c.resolution || "-")}</td>
+        <td class="num">${formatTime(c.close_time)}</td>
+      </tr>`;
+    }).join("");
+  }
+}
+
+// ── INSIGHTS ──────────────────────────────────────────────────────────────────
+function winBar(rate) {
+  const pct   = (rate * 100).toFixed(0);
+  const color = rate >= 0.7 ? "var(--green)" : rate >= 0.5 ? "var(--amber)" : "var(--red)";
+  return `<div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>`;
+}
+
+function updateInsights(ins) {
+  const panel = $id("insights-panel");
+  if (!ins) { panel.classList.add("hidden"); return; }
+  panel.classList.remove("hidden");
+  $id("insights-trades").textContent =
+    `Win rate: ${(ins.overall_win_rate*100).toFixed(0)}% (${ins.total_trades} trades)`;
+  $id("insights-city").innerHTML = ins.by_city.map(c =>
+    `<div class="bar-row">
+      <div class="bar-row-labels"><span>${c.city}</span><span>${c.trades} trades</span></div>
+      ${winBar(c.win_rate)}
+    </div>`
+  ).join("") || `<p style="color:var(--dim);font-size:.7rem">Mínimo 2 trades por ciudad</p>`;
+  $id("insights-hour").innerHTML = ins.by_hour.map(h =>
+    `<div class="bar-row">
+      <div class="bar-row-labels"><span>${String(h.hour).padStart(2,"0")}:00 UTC</span><span>${h.trades} trades</span></div>
+      ${winBar(h.win_rate)}
+    </div>`
+  ).join("") || `<p style="color:var(--dim);font-size:.7rem">Mínimo 2 trades por hora</p>`;
+}
+
+// ── BOT CONTROLS ──────────────────────────────────────────────────────────────
+async function startBot() { await fetch("/api/bot/start", {method:"POST"}); fetchStatus(); }
+async function stopBot()  { await fetch("/api/bot/stop",  {method:"POST"}); fetchStatus(); }
+
+// ── PRICE BADGE ───────────────────────────────────────────────────────────────
+let lastPriceUpdateISO = null;
+let priceThreadAlive   = false;
+
+function updatePriceBadge() {
+  const dot   = $id("price-badge-dot");
+  const txt   = $id("price-badge-txt");
+  const badge = $id("price-badge");
+  if (!lastPriceUpdateISO) {
+    badge.className = "price-badge nodata";
+    dot.style.background = "var(--dim)";
+    dot.className = "price-dot";
+    txt.textContent = "Precios: sin datos"; return;
+  }
+  const secAgo = Math.round((Date.now() - new Date(lastPriceUpdateISO).getTime()) / 1000);
+  txt.textContent = "Precios: hace " + secAgo + "s";
+  if (!priceThreadAlive) {
+    badge.className = "price-badge dead";
+    dot.style.background = "var(--red)";
+    dot.className = "price-dot";
+  } else if (secAgo < 60) {
+    badge.className = "price-badge fresh";
+    dot.style.background = "var(--amber)";
+    dot.className = "price-dot pulse-dot";
+  } else if (secAgo < 120) {
+    badge.className = "price-badge stale";
+    dot.style.background = "var(--yellow)";
+    dot.className = "price-dot";
+  } else {
+    badge.className = "price-badge dead";
+    dot.style.background = "var(--red)";
+    dot.className = "price-dot";
+  }
+}
+
+// ── POLLING ───────────────────────────────────────────────────────────────────
+async function fetchStatus() {
+  try {
+    const res = await fetch("/api/status");
+    if (res.ok) updateUI(await res.json());
+  } catch(e) { console.error(e); }
+}
+
+setInterval(updatePriceBadge, 1000);
+fetchStatus();
+setInterval(fetchStatus, 5000);
+</script>
 </body>
 </html>
