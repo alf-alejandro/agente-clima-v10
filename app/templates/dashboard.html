@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agente Clima V10</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 :root {
   --bg: #0a0a0f;
@@ -31,7 +31,6 @@ header { border-bottom:1px solid var(--border); padding:16px 28px; }
 .logo-sub { font-size:0.68rem; color:var(--dim); letter-spacing:2px; text-transform:uppercase; margin-top:2px; }
 .header-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 
-/* BADGES */
 .badge-regime { padding:4px 14px; border-radius:2px; font-size:0.72rem; font-weight:700; letter-spacing:1px; border:1px solid; }
 .badge-regime.semana { background:rgba(0,255,136,0.08); border-color:rgba(0,255,136,0.3); color:var(--green); }
 .badge-regime.finde  { background:rgba(255,215,0,0.08); border-color:rgba(255,215,0,0.3); color:var(--yellow); }
@@ -51,7 +50,6 @@ header { border-bottom:1px solid var(--border); padding:16px 28px; }
 .btn-stop:hover  { background:rgba(255,51,85,0.2); }
 .hidden { display:none!important; }
 
-/* MAIN */
 main { max-width:1400px; margin:0 auto; padding:24px 28px; display:flex; flex-direction:column; gap:20px; }
 
 /* KPIs */
@@ -75,9 +73,83 @@ main { max-width:1400px; margin:0 auto; padding:24px 28px; display:flex; flex-di
 .strategy-divider { border-top:1px solid var(--border); padding-top:12px; margin-top:4px; display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:0.68rem; color:var(--dim); }
 .strategy-divider .score-row { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:8px; }
 
-/* CHART */
-.chart-panel { background:var(--panel); border:1px solid var(--border); padding:18px 20px; border-radius:2px; }
-.panel-title { font-size:0.65rem; color:var(--dim); letter-spacing:2px; text-transform:uppercase; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; }
+/* ── CHART PANEL ─────────────────────────────────────────────────────── */
+.chart-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 20px 22px;
+  border-radius: 2px;
+}
+
+.chart-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.chart-header-left .chart-title {
+  font-size: 0.65rem;
+  color: var(--dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.chart-stats {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.chart-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chart-stat-label {
+  font-size: 0.55rem;
+  color: var(--dim);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.chart-stat-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.chart-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 2px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.chart-badge.gain { background:rgba(0,255,136,0.1); border:1px solid rgba(0,255,136,0.25); color:var(--green); }
+.chart-badge.loss { background:rgba(255,51,85,0.1);  border:1px solid rgba(255,51,85,0.25);  color:var(--red); }
+.chart-badge.flat { background:rgba(255,255,255,0.04); border:1px solid var(--border); color:var(--dim); }
+
+.chart-timeinfo {
+  font-size: 0.6rem;
+  color: var(--dim);
+  margin-top: 4px;
+  letter-spacing: 1px;
+}
+
+.chart-wrap {
+  position: relative;
+  width: 100%;
+}
+
+canvas#capitalChart { display: block; width: 100% !important; }
 
 /* TABLES GRID */
 .tables-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
@@ -92,13 +164,12 @@ td.q  { min-width:200px; word-break:break-word; white-space:normal; line-height:
 td.num{ white-space:nowrap; }
 td.res{ min-width:160px; word-break:break-word; white-space:normal; line-height:1.4; font-size:0.7rem; color:var(--dim); }
 
+.panel-title { font-size:0.65rem; color:var(--dim); letter-spacing:2px; text-transform:uppercase; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; }
 .empty-msg { font-size:0.72rem; color:var(--dim); margin-top:10px; }
 
-/* PROGRESS BAR */
 .progress-wrap { margin-top:4px; background:#1e1e2e; border-radius:1px; height:2px; }
 .progress-bar { height:2px; border-radius:1px; transition:width .3s; }
 
-/* PRICE BADGE */
 .price-badge { display:flex; align-items:center; gap:5px; padding:2px 10px; border-radius:2px; font-size:0.65rem; border:1px solid; }
 .price-badge.fresh    { background:rgba(245,158,11,0.08); border-color:rgba(245,158,11,0.3); color:var(--amber); }
 .price-badge.stale    { background:rgba(255,215,0,0.08);  border-color:rgba(255,215,0,0.3);  color:var(--yellow); }
@@ -106,13 +177,11 @@ td.res{ min-width:160px; word-break:break-word; white-space:normal; line-height:
 .price-badge.nodata   { background:var(--panel);          border-color:var(--border);         color:var(--dim); }
 .price-dot { width:6px; height:6px; border-radius:50%; }
 
-/* BADGES inline */
 .tag { display:inline-block; padding:1px 7px; border-radius:2px; font-size:0.65rem; font-weight:700; letter-spacing:.5px; }
 .tag-win  { background:rgba(0,255,136,0.1); color:var(--green); }
 .tag-tp   { background:rgba(245,158,11,0.1); color:var(--amber); }
 .tag-lose { background:rgba(255,51,85,0.1); color:var(--red); }
 
-/* INSIGHTS */
 .insights-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
 @media(max-width:700px){ .insights-grid{ grid-template-columns:1fr; } }
 .bar-row { margin-bottom:8px; }
@@ -178,15 +247,42 @@ footer { text-align:center; font-size:0.62rem; color:var(--dim); padding:16px; l
     </div>
   </div>
 
-  <!-- Chart -->
+  <!-- Chart — REDISEÑADO -->
   <div class="chart-panel">
-    <div class="panel-title">Capital en el Tiempo</div>
-    <canvas id="capitalChart" height="70"></canvas>
+    <div class="chart-header">
+      <div class="chart-header-left">
+        <div class="chart-title">Evolución de Capital</div>
+        <div class="chart-stats">
+          <div class="chart-stat">
+            <span class="chart-stat-label">Capital Inicial</span>
+            <span id="chart-initial" class="chart-stat-value c-white">—</span>
+          </div>
+          <div class="chart-stat">
+            <span class="chart-stat-label">Capital Actual</span>
+            <span id="chart-current" class="chart-stat-value c-white">—</span>
+          </div>
+          <div class="chart-stat">
+            <span class="chart-stat-label">P&L Total</span>
+            <span id="chart-pnl" class="chart-stat-value c-white">—</span>
+          </div>
+          <div class="chart-stat">
+            <span class="chart-stat-label">Max Drawdown</span>
+            <span id="chart-drawdown" class="chart-stat-value c-red">—</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <span id="chart-pnl-badge" class="chart-badge flat">—</span>
+        <span id="chart-timeinfo" class="chart-timeinfo">Sin datos</span>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="capitalChart" height="90"></canvas>
+    </div>
   </div>
 
   <!-- Open + Opportunities -->
   <div class="tables-row">
-
     <div class="table-panel">
       <div class="panel-title">
         Posiciones Abiertas (YES)
@@ -197,33 +293,22 @@ footer { text-align:center; font-size:0.62rem; color:var(--dim); padding:16px; l
       </div>
       <table>
         <thead><tr>
-          <th>Mercado</th>
-          <th>Entrada</th>
-          <th>Actual</th>
-          <th>TP</th>
-          <th>$</th>
-          <th>P&L</th>
+          <th>Mercado</th><th>Entrada</th><th>Actual</th><th>TP</th><th>$</th><th>P&L</th>
         </tr></thead>
         <tbody id="table-open"></tbody>
       </table>
       <p id="no-open" class="empty-msg hidden">Sin posiciones abiertas</p>
     </div>
-
     <div class="table-panel">
       <div class="panel-title">Oportunidades YES (último escaneo)</div>
       <table>
         <thead><tr>
-          <th>Mercado</th>
-          <th>YES</th>
-          <th>Score</th>
-          <th>Zona</th>
-          <th>Vol</th>
+          <th>Mercado</th><th>YES</th><th>Score</th><th>Zona</th><th>Vol</th>
         </tr></thead>
         <tbody id="table-opps"></tbody>
       </table>
       <p id="no-opps" class="empty-msg hidden">Sin oportunidades</p>
     </div>
-
   </div>
 
   <!-- Closed trades -->
@@ -231,13 +316,7 @@ footer { text-align:center; font-size:0.62rem; color:var(--dim); padding:16px; l
     <div class="panel-title">Trades Cerrados</div>
     <table>
       <thead><tr>
-        <th>Mercado</th>
-        <th>Entrada YES</th>
-        <th>Invertido</th>
-        <th>P&L</th>
-        <th>Estado</th>
-        <th>Resolución</th>
-        <th>Cerrado</th>
+        <th>Mercado</th><th>Entrada YES</th><th>Invertido</th><th>P&L</th><th>Estado</th><th>Resolución</th><th>Cerrado</th>
       </tr></thead>
       <tbody id="table-closed"></tbody>
     </table>
@@ -267,10 +346,73 @@ footer { text-align:center; font-size:0.62rem; color:var(--dim); padding:16px; l
 <footer>Agente Clima V10 &mdash; Day-of-Week YES / Score-Filtered</footer>
 
 <script>
-// ── CHART ────────────────────────────────────────────────────────────────────
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+const $id = id => document.getElementById(id);
+const pnlColor = v => v >= 0 ? "c-green" : "c-red";
+const pnlSign  = v => v >= 0 ? "+" : "";
+function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function formatTime(iso) { if (!iso) return "-"; return new Date(iso).toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"}); }
+function scoreColor(score) {
+  if (score >= 80) return "c-green";
+  if (score >= 60) return "c-amber";
+  return "";
+}
+
+// ── CHART SETUP ──────────────────────────────────────────────────────────────
+// Plugin para dibujar la línea base (capital inicial) y área coloreada dinámica
+const baselinePlugin = {
+  id: "baselinePlugin",
+  beforeDraw(chart) {
+    const { ctx, scales, data } = chart;
+    if (!data.datasets[0].data.length) return;
+    const baseline = chart._baselineValue;
+    if (baseline == null) return;
+
+    const y = scales.y.getPixelForValue(baseline);
+    const xStart = scales.x.left;
+    const xEnd   = scales.x.right;
+
+    // Linha de referencia (capital inicial)
+    ctx.save();
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = "rgba(255,255,255,0.15)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(xStart, y);
+    ctx.lineTo(xEnd, y);
+    ctx.stroke();
+    ctx.restore();
+  },
+};
+
+// Gradiente dinámico: verde si ganando, rojo si perdiendo
+function buildGradient(chart, baseline) {
+  const { ctx, chartArea, scales } = chart;
+  if (!chartArea) return "rgba(123,95,255,0.1)";
+
+  const vals = chart.data.datasets[0].data;
+  if (!vals.length) return "rgba(123,95,255,0.1)";
+
+  const current = vals[vals.length - 1];
+  const isGain  = current >= baseline;
+
+  const grad = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+  if (isGain) {
+    grad.addColorStop(0,   "rgba(0,255,136,0.22)");
+    grad.addColorStop(0.5, "rgba(0,255,136,0.06)");
+    grad.addColorStop(1,   "rgba(0,255,136,0.00)");
+  } else {
+    grad.addColorStop(0,   "rgba(255,51,85,0.22)");
+    grad.addColorStop(0.5, "rgba(255,51,85,0.06)");
+    grad.addColorStop(1,   "rgba(255,51,85,0.00)");
+  }
+  return grad;
+}
+
 const ctx = document.getElementById("capitalChart").getContext("2d");
 const capitalChart = new Chart(ctx, {
   type: "line",
+  plugins: [baselinePlugin],
   data: {
     labels: [],
     datasets: [{
@@ -278,30 +420,132 @@ const capitalChart = new Chart(ctx, {
       data: [],
       borderColor: "#7b5fff",
       backgroundColor: "rgba(123,95,255,0.08)",
-      fill: true, tension: 0.3, pointRadius: 2,
+      fill: true,
+      tension: 0.35,
+      pointRadius: 0,
+      pointHoverRadius: 5,
+      pointHoverBackgroundColor: "#7b5fff",
+      pointHoverBorderColor: "#fff",
+      pointHoverBorderWidth: 2,
+      borderWidth: 2,
     }],
   },
   options: {
     responsive: true,
+    interaction: { mode: "index", intersect: false },
     scales: {
-      x: { ticks: { color: "#444466", maxTicksLimit: 10, font: { family: "'JetBrains Mono',monospace", size: 10 } }, grid: { color: "#1e1e2e" } },
-      y: { ticks: { color: "#444466", callback: v => "$" + v, font: { family: "'JetBrains Mono',monospace", size: 10 } }, grid: { color: "#1e1e2e" } },
+      x: {
+        ticks: {
+          color: "#444466",
+          maxTicksLimit: 8,
+          font: { family: "'JetBrains Mono',monospace", size: 10 },
+          maxRotation: 0,
+        },
+        grid: { color: "#16161f" },
+      },
+      y: {
+        ticks: {
+          color: "#444466",
+          callback: v => "$" + v.toFixed(2),
+          font: { family: "'JetBrains Mono',monospace", size: 10 },
+        },
+        grid: { color: "#16161f" },
+      },
     },
-    plugins: { legend: { display: false } },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: "#111118",
+        borderColor: "#1e1e2e",
+        borderWidth: 1,
+        titleColor: "#444466",
+        bodyColor: "#cccce0",
+        padding: 10,
+        callbacks: {
+          label(ctx) {
+            const v   = ctx.parsed.y;
+            const base = capitalChart._baselineValue || v;
+            const diff = v - base;
+            const sign = diff >= 0 ? "+" : "";
+            return [
+              `  Capital: $${v.toFixed(2)}`,
+              `  vs inicio: ${sign}$${diff.toFixed(2)}  (${sign}${((diff/base)*100).toFixed(2)}%)`,
+            ];
+          },
+        },
+      },
+    },
+    animation: { duration: 400 },
   },
 });
 
-// ── HELPERS ──────────────────────────────────────────────────────────────────
-const $id = id => document.getElementById(id);
-const pnlColor = v => v >= 0 ? "c-green" : "c-red";
-const pnlSign  = v => v >= 0 ? "+" : "";
-function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-function formatTime(iso) { if (!iso) return "-"; return new Date(iso).toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"}); }
+// ── CHART UPDATE ─────────────────────────────────────────────────────────────
+function updateChart(hist, currentPnl) {
+  if (!hist || hist.length === 0) {
+    $id("chart-initial").textContent  = "—";
+    $id("chart-current").textContent  = "—";
+    $id("chart-pnl").textContent      = "—";
+    $id("chart-drawdown").textContent = "—";
+    $id("chart-pnl-badge").className  = "chart-badge flat";
+    $id("chart-pnl-badge").textContent = "Sin datos";
+    $id("chart-timeinfo").textContent  = "Sin datos";
+    capitalChart.data.labels           = [];
+    capitalChart.data.datasets[0].data = [];
+    capitalChart._baselineValue        = null;
+    capitalChart.update("none");
+    return;
+  }
 
-function scoreColor(score) {
-  if (score >= 80) return "c-green";
-  if (score >= 60) return "c-amber";
-  return ""; // dim
+  const values   = hist.map(h => h.capital);
+  const labels   = hist.map(h => formatTime(h.time));
+  const baseline = values[0];
+  const current  = values[values.length - 1];
+  const diff     = current - baseline;
+  const diffPct  = baseline > 0 ? (diff / baseline * 100) : 0;
+  const isGain   = diff >= 0;
+
+  // Drawdown: máxima caída desde el pico
+  let peak = baseline;
+  let maxDD = 0;
+  for (const v of values) {
+    if (v > peak) peak = v;
+    const dd = peak - v;
+    if (dd > maxDD) maxDD = dd;
+  }
+
+  // Actualizar stats
+  $id("chart-initial").textContent  = "$" + baseline.toFixed(2);
+  $id("chart-current").textContent  = "$" + current.toFixed(2);
+
+  const pnlEl = $id("chart-pnl");
+  pnlEl.textContent  = pnlSign(diff) + "$" + diff.toFixed(2);
+  pnlEl.className    = "chart-stat-value " + (isGain ? "c-green" : "c-red");
+
+  $id("chart-drawdown").textContent = maxDD > 0 ? "-$" + maxDD.toFixed(2) : "$0.00";
+
+  // Badge
+  const badge = $id("chart-pnl-badge");
+  badge.className   = "chart-badge " + (isGain ? "gain" : "loss");
+  badge.textContent = (isGain ? "▲ +" : "▼ ") + "$" + Math.abs(diff).toFixed(2)
+                    + " (" + (isGain ? "+" : "") + diffPct.toFixed(2) + "%)";
+
+  // Timeinfo
+  const firstTime = hist[0].time  ? new Date(hist[0].time).toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"}) : "—";
+  const lastTime  = hist[hist.length-1].time ? new Date(hist[hist.length-1].time).toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"}) : "—";
+  $id("chart-timeinfo").textContent = `${firstTime} → ${lastTime}  ·  ${hist.length} puntos`;
+
+  // Color de línea y gradiente según resultado
+  const lineColor = isGain ? "#00ff88" : "#ff3355";
+
+  capitalChart._baselineValue                = baseline;
+  capitalChart.data.labels                   = labels;
+  capitalChart.data.datasets[0].data         = values;
+  capitalChart.data.datasets[0].borderColor  = lineColor;
+
+  // Gradient fill: se aplica después de que el chart tenga dimensiones
+  capitalChart.data.datasets[0].backgroundColor = (ctx2) => buildGradient(ctx2.chart, baseline);
+
+  capitalChart.update();
 }
 
 // ── REGIME BADGE ─────────────────────────────────────────────────────────────
@@ -315,15 +559,12 @@ function updateRegimeBadge(data) {
 
   if (blocked) {
     badge.className = "badge-regime blocked";
-    badge.title = "Fin de semana: sin nuevas entradas (WEEKEND_ENABLED=false)";
     badge.textContent = "FINDE BLOQUEADO";
   } else if (regime === "FINDE") {
     badge.className = "badge-regime finde";
-    badge.title = `Fin de semana activo: YES ${yMin}–${yMax}¢, score ≥${sc}`;
     badge.textContent = `FINDE · ${yMin}–${yMax}¢`;
   } else {
     badge.className = "badge-regime semana";
-    badge.title = `Día de semana: YES ${yMin}–${yMax}¢, score ≥${sc}`;
     badge.textContent = `SEMANA · ${yMin}–${yMax}¢`;
   }
 
@@ -333,7 +574,7 @@ function updateRegimeBadge(data) {
   if (scoreEl) scoreEl.textContent = `≥ ${sc} pts`;
 }
 
-// ── MAIN UPDATE ───────────────────────────────────────────────────────────────
+// ── MAIN UPDATE ──────────────────────────────────────────────────────────────
 function updateUI(data) {
   const running = data.bot_status === "running";
   const badge = $id("bot-status-badge");
@@ -367,10 +608,9 @@ function updateUI(data) {
   updatePriceBadge();
   updateInsights(data.insights);
 
-  const hist = data.capital_history || [];
-  capitalChart.data.labels           = hist.map(h => formatTime(h.time));
-  capitalChart.data.datasets[0].data = hist.map(h => h.capital);
-  capitalChart.update();
+  // ── CHART: reconstruir serie desde capital_history ──
+  // capital_history es lista de {time, capital} — el primero es el punto de partida
+  updateChart(data.capital_history || [], data.pnl);
 
   // Open positions
   const openTb  = $id("table-open");
@@ -386,8 +626,7 @@ function updateUI(data) {
       ));
       const progressColor = progress >= 80 ? "var(--green)" : progress >= 40 ? "var(--amber)" : "var(--dim)";
       return `<tr>
-        <td class="q">
-          ${esc(p.question)}
+        <td class="q">${esc(p.question)}
           <div class="progress-wrap" title="${progress.toFixed(0)}% hacia TP">
             <div class="progress-bar" style="width:${progress}%;background:${progressColor}"></div>
           </div>
@@ -420,9 +659,7 @@ function updateUI(data) {
       const zoneColor = o.zone === "A" ? "var(--green)" : o.zone === "B" ? "var(--amber)" : "var(--dim)";
       return `<tr style="${rowBg}">
         <td class="q">${esc(o.question)}</td>
-        <td class="num" style="${inRange?'color:var(--amber);font-weight:600':''}">
-          ${(o.yes_price * 100).toFixed(1)}¢
-        </td>
+        <td class="num" style="${inRange?'color:var(--amber);font-weight:600':''}">${(o.yes_price * 100).toFixed(1)}¢</td>
         <td class="num ${scoreColor(o.score)}" style="font-weight:600">${o.score || 0}</td>
         <td class="num" style="color:${zoneColor}">${o.zone || '-'}</td>
         <td class="num">$${(o.volume || 0).toLocaleString()}</td>
@@ -462,25 +699,21 @@ function winBar(rate) {
   const color = rate >= 0.7 ? "var(--green)" : rate >= 0.5 ? "var(--amber)" : "var(--red)";
   return `<div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>`;
 }
-
 function updateInsights(ins) {
   const panel = $id("insights-panel");
   if (!ins) { panel.classList.add("hidden"); return; }
   panel.classList.remove("hidden");
-  $id("insights-trades").textContent =
-    `Win rate: ${(ins.overall_win_rate*100).toFixed(0)}% (${ins.total_trades} trades)`;
+  $id("insights-trades").textContent = `Win rate: ${(ins.overall_win_rate*100).toFixed(0)}% (${ins.total_trades} trades)`;
   $id("insights-city").innerHTML = ins.by_city.map(c =>
     `<div class="bar-row">
       <div class="bar-row-labels"><span>${c.city}</span><span>${c.trades} trades</span></div>
       ${winBar(c.win_rate)}
-    </div>`
-  ).join("") || `<p style="color:var(--dim);font-size:.7rem">Mínimo 2 trades por ciudad</p>`;
+    </div>`).join("") || `<p style="color:var(--dim);font-size:.7rem">Mínimo 2 trades por ciudad</p>`;
   $id("insights-hour").innerHTML = ins.by_hour.map(h =>
     `<div class="bar-row">
       <div class="bar-row-labels"><span>${String(h.hour).padStart(2,"0")}:00 UTC</span><span>${h.trades} trades</span></div>
       ${winBar(h.win_rate)}
-    </div>`
-  ).join("") || `<p style="color:var(--dim);font-size:.7rem">Mínimo 2 trades por hora</p>`;
+    </div>`).join("") || `<p style="color:var(--dim);font-size:.7rem">Mínimo 2 trades por hora</p>`;
 }
 
 // ── BOT CONTROLS ──────────────────────────────────────────────────────────────
@@ -490,7 +723,6 @@ async function stopBot()  { await fetch("/api/bot/stop",  {method:"POST"}); fetc
 // ── PRICE BADGE ───────────────────────────────────────────────────────────────
 let lastPriceUpdateISO = null;
 let priceThreadAlive   = false;
-
 function updatePriceBadge() {
   const dot   = $id("price-badge-dot");
   const txt   = $id("price-badge-txt");
@@ -533,6 +765,21 @@ async function fetchStatus() {
 setInterval(updatePriceBadge, 1000);
 fetchStatus();
 setInterval(fetchStatus, 5000);
+
+// ── DEMO DATA (para previsualización, eliminar en producción) ─────────────────
+// Descomenta esto para ver el gráfico con datos de prueba:
+/*
+setTimeout(() => {
+  const now = Date.now();
+  const hist = [];
+  let cap = 100;
+  for (let i = 0; i < 40; i++) {
+    cap += (Math.random() - 0.42) * 2;
+    hist.push({ time: new Date(now - (39-i)*120000).toISOString(), capital: +cap.toFixed(2) });
+  }
+  updateChart(hist, cap - 100);
+}, 500);
+*/
 </script>
 </body>
 </html>
